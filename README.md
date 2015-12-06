@@ -76,3 +76,5 @@ $ ipa-getkeytab -s app.host.domain -p HTTP/unison.host.domain@DOMAIN -k unison-s
 ``` 
 Once the keytab is created, copy it to the Unison servers and use its path in the configuration
 ### Active Directory
+
+* On the Unison server, change `forwardable = yes` to `forwardable = true` (The krb5.conf rfc specifies true/false but MIT kerberos allows yes/no)
