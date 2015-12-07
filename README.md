@@ -79,4 +79,5 @@ Once the keytab is created, copy it to the Unison servers and use its path in th
 
 ### Active Directory
 
-
+## Special Thanks
+Special thanks to @ymartin59 for posting the demo this code was built on and @michael-o for pointing me to it and providing great feedback.
