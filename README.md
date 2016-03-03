@@ -63,7 +63,6 @@ memberPrincipal: HTTP/unison.home.domain@DOMAIN
 ipaAllowedTarget: cn=app-http-delegation-targets,cn=s4u2proxy,cn=etc,dc=rhelent,dc=lan
 ```
 
-```
 * Create a keytab for the **Unison SPN**
 ```
 $ ipa-getkeytab -s app.host.domain -p HTTP/unison.host.domain@DOMAIN -k unison-s4u.keytab
@@ -78,6 +77,7 @@ $ kadmin.local
 .
 .
 kadmin.local:  modprinc +ok_to_auth_as_delegate HTTP/unison.host.domain
+```
 
 ### Active Directory
 
