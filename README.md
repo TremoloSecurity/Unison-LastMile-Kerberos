@@ -62,20 +62,22 @@ cn: unison-http-delegation
 memberPrincipal: HTTP/unison.home.domain@DOMAIN
 ipaAllowedTarget: cn=app-http-delegation-targets,cn=s4u2proxy,cn=etc,dc=rhelent,dc=lan
 ```
-* Allow the **Unison SPN** to get S4U2Self tickets
+
+```
+* Create a keytab for the **Unison SPN**
+```
+$ ipa-getkeytab -s app.host.domain -p HTTP/unison.host.domain@DOMAIN -k unison-s4u.keytab
+``` 
+Once the keytab is created, copy it to the Unison servers and use its path in the configuration
+* On the Unison server, change `forwardable = yes` to `forwardable = true` (The krb5.conf rfc specifies true/false but MIT kerberos allows yes/no)
+
+* Finally, allow the **Unison SPN** to get S4U2Self tickets
 ```
 $ kadmin.local
 .
 .
 .
 kadmin.local:  modprinc +ok_to_auth_as_delegate HTTP/unison.host.domain
-```
-* Finally, create a keytab for the **Unison SPN**
-```
-$ ipa-getkeytab -s app.host.domain -p HTTP/unison.host.domain@DOMAIN -k unison-s4u.keytab
-``` 
-Once the keytab is created, copy it to the Unison servers and use its path in the configuration
-* On the Unison server, change `forwardable = yes` to `forwardable = true` (The krb5.conf rfc specifies true/false but MIT kerberos allows yes/no)
 
 ### Active Directory
 
