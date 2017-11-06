@@ -4,14 +4,14 @@
 	<groupId>com.tremolosecurity.unison</groupId>
 	<artifactId>unison-lastmile-kerberos</artifactId>
 	<packaging>jar</packaging>
-	<version>1.0.7</version>
+	<version>1.0.12</version>
 	<name>unison-lastmile-kerberos</name>
 	<url>http://maven.apache.org</url>
 	<dependencies>
 		<dependency>
 			<groupId>com.tremolosecurity.unison</groupId>
 			<artifactId>unison-sdk</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.12</version>
 		</dependency>
 	</dependencies>
 	<build>

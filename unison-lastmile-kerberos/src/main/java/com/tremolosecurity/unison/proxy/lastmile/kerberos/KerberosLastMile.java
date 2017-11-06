@@ -40,6 +40,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 import org.ietf.jgss.GSSContext;
@@ -47,6 +48,7 @@ import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
+import org.joda.time.DateTime;
 
 import com.sun.security.jgss.ExtendedGSSContext;
 import com.sun.security.jgss.ExtendedGSSCredential;
@@ -76,8 +78,9 @@ public class KerberosLastMile implements HttpFilter {
 			HttpFilterChain chain) throws Exception {
 		
 		String header = (String) request.getSession().getAttribute(this.tokenIdentifier);
-		
-		if (header == null) {
+        
+        DateTime expires = (DateTime) request.getSession().getAttribute("UNISON_KRB5_EXPIRES");
+		if (header == null || expires.isBeforeNow()) {
 		
 			AuthInfo userData = ((AuthController) request.getSession().getAttribute(ProxyConstants.AUTH_CTL)).getAuthInfo();
 			
@@ -88,7 +91,7 @@ public class KerberosLastMile implements HttpFilter {
 				throw new Exception("Attribute " + this.uidAttributeName + " not present");
 			}
 			
-			header = "Negotiate " + this.generateToken(uid.getValues().get(0), this.targetPrincipal);
+			header = "Negotiate " + this.generateToken(uid.getValues().get(0), this.targetPrincipal,request.getSession());
 			request.getSession().setAttribute(this.tokenIdentifier, header);
 		}
 		request.addHeader(new Attribute("Authorization",header));
@@ -197,17 +200,19 @@ public class KerberosLastMile implements HttpFilter {
                                             final GSSCredential userCredentials,
                                             final Oid mech)
         throws Exception {
+        final Oid KRB5_PRINCIPAL_OID = new Oid("1.2.840.113554.1.2.2.1");
         ExtendedGSSContext context =
             Subject.doAs(this.serviceSubject, new PrivilegedExceptionAction<ExtendedGSSContext>() {
                     public ExtendedGSSContext run() throws Exception {
                         GSSManager manager = GSSManager.getInstance();
+                        GSSName servicePrincipal = manager.createName(target, KRB5_PRINCIPAL_OID);
                         ExtendedGSSContext extendedContext =
-                            (ExtendedGSSContext) manager.createContext(manager.createName(target, null),
+                            (ExtendedGSSContext) manager.createContext(servicePrincipal,
                                                                        mech,
                                                                        userCredentials,
                                                                        GSSContext.DEFAULT_LIFETIME);
-                        extendedContext.requestMutualAuth(true);
-                        extendedContext.requestConf(true);
+                        //extendedContext.requestMutualAuth(true);
+                        //extendedContext.requestConf(true);
                         return extendedContext;
                     }
                 });
@@ -222,7 +227,9 @@ public class KerberosLastMile implements HttpFilter {
      * @return Base64 token
      * @throws Exception many thinks may fail
      */
-    public String generateToken(String targetUserName, String targetService) throws Exception {
+    public String generateToken(String targetUserName, String targetService,HttpSession session) throws Exception {
+        
+        
         final Oid SPNEGO_OID = new Oid("1.3.6.1.5.5.2");
 
         // Get impersonated user credentials
@@ -235,12 +242,23 @@ public class KerberosLastMile implements HttpFilter {
 
         // Create context for target service
         ExtendedGSSContext context = startAsClient(targetService, impersonatedUserCreds, SPNEGO_OID);
+        DateTime expires = new DateTime(DateTime.now().getMillis() + (1000L * context.getLifetime()));
+        session.setAttribute("UNISON_KRB5_EXPIRES", expires);
+
         final byte[] token = context.initSecContext(new byte[0], 0, 0);
         
-        if (logger.isDebugEnabled()) {
-        	logger.debug("Context srcName " + context.getSrcName());
-        	logger.debug("Context targName " + context.getTargName());
+        if (!context.isEstablished()) {
+            //throw new Exception("Context not established");
         }
+
+        //if (logger.isDebugEnabled()) {
+        	logger.info("Context srcName " + context.getSrcName());
+            logger.info("Context targName " + context.getTargName());
+            logger.info("Lifetome " + context.getLifetime());
+            
+            //logger.info(context.getDelegCred().getName());
+            
+        //}
 
         final String result = Base64.getEncoder().encodeToString(token);
         
